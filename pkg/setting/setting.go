@@ -9,10 +9,13 @@ import (
 )
 
 type commonConf struct {
-	HttpPort  string
-	RPCPort   string
-	Cluster   bool
-	CryptoKey string
+	HttpPort       string
+	RPCPort        string
+	Cluster        bool
+	CryptoKey      string
+	MaxMessageSize int64
+	ReadBuffer     int
+	WriteBuffer    int
 }
 
 var CommonSetting = &commonConf{}
@@ -53,10 +56,13 @@ func Setup() {
 
 func Default() {
 	CommonSetting = &commonConf{
-		HttpPort:  "6000",
-		RPCPort:   "7000",
-		Cluster:   false,
-		CryptoKey: "Adba723b7fe06819",
+		HttpPort:       "6000",
+		RPCPort:        "7000",
+		Cluster:        false,
+		CryptoKey:      "Adba723b7fe06819",
+		MaxMessageSize: 8192,
+		ReadBuffer:     1024,
+		WriteBuffer:    1024,
 	}
 
 	GlobalSetting = &global{

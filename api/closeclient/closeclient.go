@@ -12,6 +12,7 @@ type Controller struct {
 }
 
 type inputData struct {
+	SystemId string `json:"systemId"`
 	ClientId string `json:"clientId" validate:"required"`
 }
 
@@ -29,6 +30,9 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	systemId := r.Header.Get("SystemId")
+	if len(inputData.SystemId) > 0 {
+		systemId = inputData.SystemId
+	}
 
 	//发送信息
 	servers.CloseClient(inputData.ClientId, systemId)

@@ -31,7 +31,7 @@ type RetData struct {
 }
 
 // 心跳间隔
-var heartbeatInterval = 25 * time.Second
+var heartbeatInterval = 30 * time.Second
 
 func init() {
 	ToClientChan = make(chan clientInfo, 1000)

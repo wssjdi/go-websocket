@@ -12,6 +12,7 @@ type Controller struct {
 }
 
 type inputData struct {
+	SystemId  string      `json:"systemId"`
 	GroupName string      `json:"groupName" validate:"required"`
 	Code      int         `json:"code"`
 	Msg       string      `json:"msg"`
@@ -32,6 +33,10 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	systemId := r.Header.Get("SystemId")
+	if len(inputData.SystemId) > 0 {
+		systemId = inputData.SystemId
+	}
+
 	ret := servers.GetOnlineList(&systemId, &inputData.GroupName)
 
 	api.Render(w, retcode.SUCCESS, "success", ret)

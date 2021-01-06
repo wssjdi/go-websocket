@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"log"
 	"testing"
 )
 
@@ -16,9 +17,10 @@ func TestEncrypt(t *testing.T) {
 }
 
 func TestDncrypt(t *testing.T) {
-	raw := "pqjPM0GJUjlgryzMaslqBAzIknumcdgey1MN+ylWHqY="
-	key := []byte("asdf1234qwer7894")
+	raw := "EsrTlM9RjEDtGYE0ZG9aKHmeQqj1BFD6QFgO5RwfgpXQ/xH7fqKmHVxqRdpXeuXh"
+	key := []byte("Adba723b7fe06819")
 	str, err := Decrypt(raw, key)
+	log.Printf("解密数据为:[ %s ]", str)
 	if err == nil {
 		t.Log("suc", str)
 	} else {

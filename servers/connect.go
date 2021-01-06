@@ -5,13 +5,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/woodylan/go-websocket/api"
 	"github.com/woodylan/go-websocket/define/retcode"
+	"github.com/woodylan/go-websocket/pkg/setting"
 	"github.com/woodylan/go-websocket/tools/util"
 	"net/http"
-)
-
-const (
-	// 最大的消息大小
-	maxMessageSize = 8192
 )
 
 type Controller struct {
@@ -23,8 +19,8 @@ type renderData struct {
 
 func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	conn, err := (&websocket.Upgrader{
-		ReadBufferSize:  1024,
-		WriteBufferSize: 1024,
+		ReadBufferSize:  setting.CommonSetting.ReadBuffer,
+		WriteBufferSize: setting.CommonSetting.WriteBuffer,
 		// 允许所有CORS跨域请求
 		CheckOrigin: func(r *http.Request) bool {
 			return true
@@ -37,7 +33,7 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//设置读取消息大小上线
-	conn.SetReadLimit(maxMessageSize)
+	conn.SetReadLimit(setting.CommonSetting.MaxMessageSize)
 
 	//解析参数
 	systemId := r.FormValue("systemId")

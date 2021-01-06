@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"encoding/json"
 	"github.com/woodylan/go-websocket/api"
 	"github.com/woodylan/go-websocket/define"
 	"github.com/woodylan/go-websocket/define/retcode"
@@ -10,6 +11,10 @@ import (
 	"net/http"
 )
 
+type nameSpace struct {
+	SystemId string `json:"systemId"`
+}
+
 func AccessTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -17,8 +22,15 @@ func AccessTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		//检查header是否设置SystemId
+		//检查header是否设置SystemId,header中设置或者在请求体中设置都可以
 		systemId := r.Header.Get("SystemId")
+		if len(systemId) == 0 {
+			var nameSpace nameSpace
+			if err := json.NewDecoder(r.Body).Decode(&nameSpace); err == nil {
+				systemId = nameSpace.SystemId
+			}
+		}
+
 		if len(systemId) == 0 {
 			api.Render(w, retcode.FAIL, "系统ID不能为空", []string{})
 			return

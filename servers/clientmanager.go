@@ -162,6 +162,9 @@ func (manager *ClientManager) SendMessage2LocalGroup(systemId, messageId, sendUs
 		clientIds := manager.GetGroupClientList(util.GenGroupKey(systemId, groupName))
 		if len(clientIds) > 0 {
 			for _, clientId := range clientIds {
+				if len(sendUserId) > 0 && sendUserId == clientId {
+					continue
+				}
 				if _, err := Manager.GetByClientId(clientId); err == nil {
 					//添加到本地
 					SendMessage2LocalClient(messageId, clientId, sendUserId, code, msg, data)

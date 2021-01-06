@@ -2,13 +2,13 @@ package api
 
 import (
 	"encoding/json"
-	zhongwen "github.com/go-playground/locales/zh"
+	local "github.com/go-playground/locales/zh"
 	ut "github.com/go-playground/universal-translator"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 	"github.com/woodylan/go-websocket/define/retcode"
 	"gopkg.in/go-playground/validator.v9"
-	zh2 "gopkg.in/go-playground/validator.v9/translations/zh"
+	translate "gopkg.in/go-playground/validator.v9/translations/zh"
 	"io"
 	"net/http"
 )
@@ -47,11 +47,11 @@ func Render(w http.ResponseWriter, code int, msg string, data interface{}) (str 
 func Validate(inputData interface{}) error {
 
 	validate := validator.New()
-	zh := zhongwen.New()
+	zh := local.New()
 	uni := ut.New(zh, zh)
 	trans, _ := uni.GetTranslator("zh")
 
-	_ = zh2.RegisterDefaultTranslations(validate, trans)
+	_ = translate.RegisterDefaultTranslations(validate, trans)
 
 	err := validate.Struct(inputData)
 	if err != nil {

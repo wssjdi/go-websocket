@@ -12,6 +12,7 @@ type Controller struct {
 }
 
 type inputData struct {
+	SystemId   string `json:"systemId"`
 	ClientId   string `json:"clientId" validate:"required"`
 	SendUserId string `json:"sendUserId"`
 	Code       int    `json:"code"`

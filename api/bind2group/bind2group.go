@@ -12,6 +12,7 @@ type Controller struct {
 }
 
 type inputData struct {
+	SystemId  string `json:"systemId"`
 	ClientId  string `json:"clientId" validate:"required"`
 	GroupName string `json:"groupName" validate:"required"`
 	UserId    string `json:"userId"`
@@ -32,6 +33,10 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	}
 
 	systemId := r.Header.Get("SystemId")
+	if len(inputData.SystemId) > 0 {
+		systemId = inputData.SystemId
+	}
+
 	servers.AddClient2Group(systemId, inputData.GroupName, inputData.ClientId, inputData.UserId, inputData.Extend)
 
 	api.Render(w, retcode.SUCCESS, "success", []string{})

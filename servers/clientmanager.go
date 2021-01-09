@@ -20,10 +20,17 @@ type ClientManager struct {
 	DisConnect chan *Client // 断开连接处理
 
 	GroupLock sync.RWMutex
-	Groups    map[string][]string
+	Groups    map[string][]string // 群组
+	// key为GroupName;value为ClientId列表
+
+	UserLock    sync.RWMutex
+	UserClients map[string][]string // 拥有同样业务端UserId的客户端连接
+	// 用户当一个业务端用户在多个地方登陆时通知客户端
+	// key为业务端userId;value为ClientId列表
 
 	SystemClientsLock sync.RWMutex
-	SystemClients     map[string][]string
+	SystemClients     map[string][]string // 所有系统的链接
+	// key为systemId;value为ClientId列表
 }
 
 func NewClientManager() (clientManager *ClientManager) {
@@ -32,6 +39,7 @@ func NewClientManager() (clientManager *ClientManager) {
 		Connect:       make(chan *Client, 10000),
 		DisConnect:    make(chan *Client, 10000),
 		Groups:        make(map[string][]string, 100),
+		UserClients:   make(map[string][]string, 100),
 		SystemClients: make(map[string][]string, 100),
 	}
 
@@ -169,7 +177,7 @@ func (manager *ClientManager) SendMessage2LocalGroup(systemId, messageId, sendUs
 					//添加到本地
 					SendMessage2LocalClient(messageId, clientId, sendUserId, code, msg, data)
 				} else {
-					//删除分组
+					//删除分组,如果客户端连接已经不存在了,则从group中删除
 					manager.delGroupClient(util.GenGroupKey(systemId, groupName), clientId)
 				}
 			}
@@ -215,7 +223,7 @@ func (manager *ClientManager) AddClient2LocalGroup(groupName string, client *Cli
 		"extend":   client.Extend,
 	})
 	data := string(mJson)
-	sendUserId := ""
+	sendUserId := client.ClientId
 
 	//发送系统通知
 	SendMessage2Group(client.SystemId, sendUserId, groupName, retcode.ONLINE_MESSAGE_CODE, "客户端上线", &data)
@@ -245,6 +253,32 @@ func (manager *ClientManager) GetGroupClientList(groupKey string) []string {
 	manager.GroupLock.RLock()
 	defer manager.GroupLock.RUnlock()
 	return manager.Groups[groupKey]
+}
+
+// 添加到用户客户端连接列表
+func (manager *ClientManager) addClient2UserClients(userId string, client *Client) {
+	manager.UserLock.Lock()
+	defer manager.UserLock.Unlock()
+	manager.UserClients[userId] = append(manager.UserClients[userId], client.ClientId)
+}
+
+// 删除用户列表里的客户端连接
+func (manager *ClientManager) delUserClient(userId string, clientId string) {
+	manager.UserLock.Lock()
+	defer manager.UserLock.Unlock()
+
+	for index, userClientId := range manager.UserClients[userId] {
+		if userClientId == clientId {
+			manager.UserClients[userId] = append(manager.UserClients[userId][:index], manager.UserClients[userId][index+1:]...)
+		}
+	}
+}
+
+// 获取用户列表里的客户端连接
+func (manager *ClientManager) GetUserClients(userId string) []string {
+	manager.UserLock.RLock()
+	defer manager.UserLock.RUnlock()
+	return manager.UserClients[userId]
 }
 
 // 添加到系统客户端列表

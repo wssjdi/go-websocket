@@ -35,7 +35,7 @@ services:
     build:
       context: ./
       dockerfile: Dockerfile
-    command: /data/go-websocket/go-websocket -c /data/go-websocket/conf/app.cluster.ini
+    command: /data/go-websocket/go-websocket -c /data/go-websocket/conf/app.product.ini
     depends_on:
       - ws_etcd1
       - ws_etcd2

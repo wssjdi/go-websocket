@@ -49,6 +49,14 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 
 	Manager.AddClient2SystemClient(systemId, clientSocket)
 
+	//如果有groupName参数,则连接成功之后直接将客户端绑定到对应的组
+	groupName := r.FormValue("groupName")
+	if len(groupName) > 0 {
+		userId := r.FormValue("userId")
+		extend := r.FormValue("extend")
+		Manager.AddClient2LocalGroup(groupName, clientSocket, userId, extend)
+	}
+
 	//读取客户端消息
 	clientSocket.Read()
 

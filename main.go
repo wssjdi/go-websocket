@@ -14,11 +14,15 @@ import (
 )
 
 func init() {
+	//读取配置文件,初始化项目配置
 	setting.Setup()
+
+	//日志配置初始化
 	log.Setup()
 }
 
 func main() {
+
 	//初始化RPC服务
 	initRPCServer()
 

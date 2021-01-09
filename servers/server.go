@@ -242,12 +242,14 @@ func PingTimer() {
 			<-ticker.C
 			//发送心跳
 			for clientId, conn := range Manager.AllClient() {
-				if err := conn.Socket.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second)); err != nil {
+				if err := conn.Socket.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(heartbeatInterval/2)); err != nil {
+					//发送心跳请求,如果心跳请求在心跳间隔时间的一半时间之内还没有成功响应，则关闭连接
 					Manager.DisConnect <- conn
-					log.Errorf("发送心跳失败: %s 总连接数：%d", clientId, Manager.Count())
-				}
+					log.Errorf("发送心跳失败,和客户端[ %s ]的连接将主动关闭; 当前总连接数：%d", clientId, Manager.Count())
+				} //else {
+				//	log.Infof("发送心跳成功: %s 总连接数：%d", clientId, Manager.Count())
+				//}
 			}
 		}
-
 	}()
 }

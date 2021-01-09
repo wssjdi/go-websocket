@@ -22,12 +22,12 @@ func Init() {
 	closeClientHandler := &closeclient.Controller{}
 
 	http.HandleFunc("/api/register", registerHandler.Run)
-	http.HandleFunc("/api/send_to_client", AccessTokenMiddleware(sendToClientHandler.Run))
-	http.HandleFunc("/api/send_to_clients", AccessTokenMiddleware(sendToClientsHandler.Run))
-	http.HandleFunc("/api/send_to_group", AccessTokenMiddleware(sendToGroupHandler.Run))
-	http.HandleFunc("/api/bind_to_group", AccessTokenMiddleware(bindToGroupHandler.Run))
-	http.HandleFunc("/api/get_online_list", AccessTokenMiddleware(getGroupListHandler.Run))
-	http.HandleFunc("/api/close_client", AccessTokenMiddleware(closeClientHandler.Run))
+	http.HandleFunc("/api/bind/2/group", AccessTokenMiddleware(bindToGroupHandler.Run))
+	http.HandleFunc("/api/group/list", AccessTokenMiddleware(getGroupListHandler.Run))
+	http.HandleFunc("/api/send/2/client", AccessTokenMiddleware(sendToClientHandler.Run))
+	http.HandleFunc("/api/send/2/clients", AccessTokenMiddleware(sendToClientsHandler.Run))
+	http.HandleFunc("/api/send/2/group", AccessTokenMiddleware(sendToGroupHandler.Run))
+	http.HandleFunc("/api/close/client", AccessTokenMiddleware(closeClientHandler.Run))
 
 	servers.StartWebSocket()
 

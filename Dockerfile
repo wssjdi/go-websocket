@@ -9,6 +9,6 @@ WORKDIR /data/go-websocket
 COPY --from=build-dist /data/release/go-websocket ./
 COPY --from=build-dist /data/release/conf /data/go-websocket/conf
 
-EXPOSE 6000
+EXPOSE 8060
 
 CMD ["/data/go-websocket/go-websocket","-c","./conf/app.ini"]

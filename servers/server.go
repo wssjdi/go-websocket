@@ -168,6 +168,24 @@ func GetOnlineList(systemId *string, groupName *string) map[string]interface{} {
 	}
 }
 
+//TODO:获取用户客户端连接列表
+func GetUserList(systemId *string, groupName *string, userId *string) map[string]interface{} {
+	var clientList []string
+	if util.IsCluster() {
+		//发送到系统广播
+		clientList = GetOnlineListBroadcast(systemId, groupName)
+	} else {
+		//如果是单机服务，则只发送到本机
+		retList := Manager.GetGroupClientList(util.GenGroupKey(*systemId, *groupName))
+		clientList = append(clientList, retList...)
+	}
+
+	return map[string]interface{}{
+		"count": len(clientList),
+		"list":  clientList,
+	}
+}
+
 //通过本服务器发送信息
 func SendMessage2LocalClient(messageId, clientId string, sendUserId string, code int, msg string, data *string) {
 	log.WithFields(log.Fields{

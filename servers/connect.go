@@ -8,6 +8,7 @@ import (
 	"github.com/woodylan/go-websocket/pkg/setting"
 	"github.com/woodylan/go-websocket/tools/util"
 	"net/http"
+	"strings"
 )
 
 type Controller struct {
@@ -38,14 +39,20 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	//解析参数
 	systemId := r.FormValue("systemId")
 	if len(systemId) == 0 {
-		_ = Render(conn, "", "", retcode.SYSTEM_ID_ERROR, "系统ID不能为空", []string{})
+		_ = Render(conn, "", "", retcode.SystemIdErrCode, "系统ID不能为空", []string{})
 		_ = conn.Close()
 		return
 	}
 
 	clientId := util.GenClientId()
 
-	clientSocket := NewClient(clientId, systemId, conn)
+	//上线、下线时是否通知相同GroupName中的其他客户端连接,开启则上线、下线时会通知同组的所有客户端
+	notify := false
+	if "true" == strings.ToLower(r.FormValue("notify")) {
+		notify = true
+	}
+
+	clientSocket := NewClient(clientId, systemId, notify, conn)
 
 	Manager.AddClient2SystemClient(systemId, clientSocket)
 

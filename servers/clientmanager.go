@@ -87,9 +87,9 @@ func (manager *ClientManager) EventDisconnect(client *Client) {
 	sendUserId := ""
 
 	//发送下线通知
-	if len(client.GroupList) > 0 {
+	if client.Notify && len(client.GroupList) > 0 {
 		for _, groupName := range client.GroupList {
-			SendMessage2Group(client.SystemId, sendUserId, groupName, retcode.OFFLINE_MESSAGE_CODE, "客户端下线", &data)
+			SendMessage2Group(client.SystemId, sendUserId, groupName, retcode.OffLineMsgCode, "客户端下线", &data)
 		}
 	}
 
@@ -223,10 +223,11 @@ func (manager *ClientManager) AddClient2LocalGroup(groupName string, client *Cli
 		"extend":   client.Extend,
 	})
 	data := string(mJson)
-	sendUserId := client.ClientId
 
-	//发送系统通知
-	SendMessage2Group(client.SystemId, sendUserId, groupName, retcode.ONLINE_MESSAGE_CODE, "客户端上线", &data)
+	if client.Notify {
+		//发送系统通知
+		SendMessage2Group(client.SystemId, client.ClientId, groupName, retcode.OnLineMsgCode, "客户端上线", &data)
+	}
 }
 
 // 添加到本地分组

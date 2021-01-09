@@ -1,8 +1,8 @@
 package define
 
 const (
-	//ETCD服务列表路径
-	ETCD_SERVER_LIST = "/wsServers/"
+	//ETcd服务列表路径
+	ETcdServerList = "/gws/servers/"
 	//账号信息前缀
-	ETCD_PREFIX_ACCOUNT_INFO = "ws/account/"
+	ETcdPrefixAccountInfo = "/gws/account/"
 )

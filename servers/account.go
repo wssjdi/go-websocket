@@ -30,7 +30,7 @@ func Register(systemId string) (err error) {
 
 	if util.IsCluster() {
 		//判断是否被注册
-		resp, err := etcd.Get(define.ETCD_PREFIX_ACCOUNT_INFO + systemId)
+		resp, err := etcd.Get(define.ETcdPrefixAccountInfo + systemId)
 		if err != nil {
 			return err
 		}
@@ -42,7 +42,7 @@ func Register(systemId string) (err error) {
 		jsonBytes, _ := json.Marshal(accountInfo)
 
 		//注册
-		err = etcd.Put(define.ETCD_PREFIX_ACCOUNT_INFO+systemId, string(jsonBytes))
+		err = etcd.Put(define.ETcdPrefixAccountInfo+systemId, string(jsonBytes))
 		if err != nil {
 			panic(err)
 			return err

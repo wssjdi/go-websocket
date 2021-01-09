@@ -32,25 +32,25 @@ func AccessTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if len(systemId) == 0 {
-			api.Render(w, retcode.FAIL, "系统ID不能为空", []string{})
+			api.Render(w, retcode.SystemIdErrCode, "系统ID不能为空", []string{})
 			return
 		}
 
 		//判断是否被注册
 		if util.IsCluster() {
-			resp, err := etcd.Get(define.ETCD_PREFIX_ACCOUNT_INFO + systemId)
+			resp, err := etcd.Get(define.ETcdPrefixAccountInfo + systemId)
 			if err != nil {
 				api.Render(w, retcode.FAIL, "etcd服务器错误", []string{})
 				return
 			}
 
 			if resp.Count == 0 {
-				api.Render(w, retcode.FAIL, "系统ID无效", []string{})
+				api.Render(w, retcode.SystemIdErrCode, "系统ID无效", []string{})
 				return
 			}
 		} else {
 			if _, ok := servers.SystemMap.Load(systemId); !ok {
-				api.Render(w, retcode.FAIL, "系统ID无效", []string{})
+				api.Render(w, retcode.SystemIdErrCode, "系统ID无效", []string{})
 				return
 			}
 		}

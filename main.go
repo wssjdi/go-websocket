@@ -26,7 +26,7 @@ func main() {
 	//初始化RPC服务
 	initRPCServer()
 
-	//将服务器地址、端口注册到etcd中
+	//将服务器地址、端口注册到eTcd中
 	registerServer()
 
 	//初始化路由
@@ -51,7 +51,7 @@ func initRPCServer() {
 	}
 }
 
-//ETCD注册发现服务
+//eTcd注册发现GRpc服务
 func registerServer() {
 	if util.IsCluster() {
 		//注册租约
@@ -62,7 +62,7 @@ func registerServer() {
 
 		hostPort := net.JoinHostPort(setting.GlobalSetting.LocalHost, setting.CommonSetting.RPCPort)
 		//添加key
-		err = ser.PutService(define.ETCD_SERVER_LIST+hostPort, hostPort)
+		err = ser.PutService(define.ETcdServerList+hostPort, hostPort)
 		if err != nil {
 			panic(err)
 		}
@@ -71,7 +71,7 @@ func registerServer() {
 		if err != nil {
 			panic(err)
 		}
-		_, err = cli.GetService(define.ETCD_SERVER_LIST)
+		_, err = cli.GetService(define.ETcdServerList)
 		if err != nil {
 			panic(err)
 		}

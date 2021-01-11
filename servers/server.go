@@ -40,6 +40,7 @@ func init() {
 var Manager = NewClientManager() // 管理者
 
 func StartWebSocket() {
+	//WebSocket Api
 	websocketHandler := &Controller{}
 	http.HandleFunc("/ws", websocketHandler.Run)
 

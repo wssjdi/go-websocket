@@ -15,6 +15,7 @@ import (
 )
 
 func Init() {
+	//Rest Api
 	registerHandler := &register.Controller{}
 	sendToClientHandler := &send2client.Controller{}
 	sendToClientsHandler := &send2clients.Controller{}

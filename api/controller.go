@@ -29,6 +29,16 @@ func ConnRender(conn *websocket.Conn, data interface{}) (err error) {
 	return
 }
 
+func ConnRenderMsg(conn *websocket.Conn, code int, msg string, data interface{}) (err error) {
+	err = conn.WriteJSON(RetData{
+		Code: code,
+		Msg:  msg,
+		Data: data,
+	})
+
+	return
+}
+
 func Render(w http.ResponseWriter, code int, msg string, data interface{}) (str string) {
 	var retData RetData
 

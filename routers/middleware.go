@@ -19,14 +19,21 @@ type nameSpace struct {
 
 func AccessTokenMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			return
-		}
+		//解析参数
+		systemId := r.FormValue("systemId")
 
-		//检查header是否设置SystemId,header中设置或者在请求体中设置都可以
-		systemId := r.Header.Get("SystemId")
 		if len(systemId) == 0 {
+			//检查header是否设置SystemId,header中设置或者在请求体中设置都可以
+			if len(systemId) == 0 {
+				systemId = r.Header.Get("SystemId")
+			}
+
+			// 如果请求头和url中都没有systemId参数，则只处理post请求，get请求会报错
+			if r.Method != http.MethodPost {
+				w.WriteHeader(http.StatusMethodNotAllowed)
+				return
+			}
+
 			bodyBytes, _ := ioutil.ReadAll(r.Body) //请求体读取出来,看有没有传systemId
 			//log.Infof("原始请求内容:[%s]" , string(bodyBytes))
 			ns := &nameSpace{}

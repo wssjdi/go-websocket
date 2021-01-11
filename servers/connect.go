@@ -4,7 +4,9 @@ import (
 	"github.com/gorilla/websocket"
 	log "github.com/sirupsen/logrus"
 	"github.com/woodylan/go-websocket/api"
+	"github.com/woodylan/go-websocket/define"
 	"github.com/woodylan/go-websocket/define/retcode"
+	"github.com/woodylan/go-websocket/pkg/etcd"
 	"github.com/woodylan/go-websocket/pkg/setting"
 	"github.com/woodylan/go-websocket/tools/util"
 	"net/http"
@@ -19,6 +21,9 @@ type renderData struct {
 }
 
 func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
+	//解析参数
+	systemId := r.FormValue("systemId")
+
 	conn, err := (&websocket.Upgrader{
 		ReadBufferSize:  setting.CommonSetting.ReadBuffer,
 		WriteBufferSize: setting.CommonSetting.WriteBuffer,
@@ -27,22 +32,43 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 			return true
 		},
 	}).Upgrade(w, r, nil)
+
 	if err != nil {
 		log.Errorf("upgrade error: %v", err)
 		http.NotFound(w, r)
 		return
 	}
 
-	//设置读取消息大小上线
-	conn.SetReadLimit(setting.CommonSetting.MaxMessageSize)
-
-	//解析参数
-	systemId := r.FormValue("systemId")
 	if len(systemId) == 0 {
-		_ = Render(conn, "", "", retcode.SystemIdErrCode, "系统ID不能为空", []string{})
+		api.ConnRenderMsg(conn, retcode.ETcdErrCode, "系统ID不能为空", []string{})
 		_ = conn.Close()
 		return
 	}
+
+	//判断系统是否被注册
+	if util.IsCluster() {
+		resp, err := etcd.Get(define.ETcdPrefixAccountInfo + systemId)
+		if err != nil {
+			api.ConnRenderMsg(conn, retcode.ETcdErrCode, "etcd服务器错误", []string{})
+			_ = conn.Close()
+			return
+		}
+
+		if resp.Count == 0 {
+			api.ConnRenderMsg(conn, retcode.ETcdErrCode, "系统ID未注册", []string{})
+			_ = conn.Close()
+			return
+		}
+	} else {
+		if _, ok := SystemMap.Load(systemId); !ok {
+			api.ConnRenderMsg(conn, retcode.ETcdErrCode, "系统ID未注册", []string{})
+			_ = conn.Close()
+			return
+		}
+	}
+
+	//设置读取消息大小上线
+	conn.SetReadLimit(setting.CommonSetting.MaxMessageSize)
 
 	clientId := util.GenClientId()
 

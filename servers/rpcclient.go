@@ -111,8 +111,8 @@ func SendUserBroadcast(systemId string, messageId, sendUserId, groupName, userId
 	setting.GlobalSetting.ServerListLock.Lock()
 	defer setting.GlobalSetting.ServerListLock.Unlock()
 	index := 0
-	for key, addr := range setting.GlobalSetting.ServerList {
-		log.Infof("GlobalSetting.ServerList index:[ %d ], Key:[ %s ], Value:[ %s ]", index, key, addr)
+	for _, addr := range setting.GlobalSetting.ServerList {
+		//log.Infof("GlobalSetting.ServerList index:[ %d ], Key:[ %s ], Value:[ %s ]", index, key, addr)
 		index = index + 1
 		conn := grpcConn(addr)
 		defer conn.Close()

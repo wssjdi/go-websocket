@@ -89,6 +89,13 @@ func (manager *ClientManager) EventDisconnect(client *Client) {
 	data := string(mJson)
 
 	//发送下线通知
+	//通知同UserId的客户端连接
+	if len(client.UserId) > 0 {
+		//默认通知所有当前用户登录的客户端，不区分system和group
+		SendMessage2User("", client.ClientId, "", client.UserId, retcode.OffLineMsgCode, "客户端下线", &data)
+	}
+
+	//通知同组的客户端连接
 	if client.Notify && len(client.GroupList) > 0 {
 		for _, groupName := range client.GroupList {
 			SendMessage2Group(client.SystemId, client.ClientId, groupName, retcode.OffLineMsgCode, "客户端下线", &data)
@@ -196,9 +203,9 @@ func (manager *ClientManager) SendMessage2LocalUserId(systemId, messageId, sendU
 	if len(userId) > 0 {
 		userClients := manager.GetUserClients(userId)
 		if len(userClients) > 0 {
-			log.Infof("SendMessage2LocalUserId userClients [ %d ]", len(userClients))
+			//log.Infof("SendMessage2LocalUserId userClients [ %d ]", len(userClients))
 			for _, clientId := range userClients {
-				log.Infof("SendMessage2LocalUserId clientId [ %s ]", clientId)
+				//log.Infof("SendMessage2LocalUserId clientId [ %s ]", clientId)
 				if len(sendUserId) > 0 && sendUserId == clientId {
 					continue //是自己,不发消息给自己
 				}
@@ -217,11 +224,11 @@ func (manager *ClientManager) SendMessage2LocalUserId(systemId, messageId, sendU
 				if len(systemId) > 0 && client.SystemId != systemId {
 					continue //跳过,判断下一个连接
 				}
-				log.Infof("SendMessage2LocalUserId systemId [ %s ]", systemId)
+				//log.Infof("SendMessage2LocalUserId systemId [ %s ]", systemId)
 
 				send := true
 				if len(groupName) > 0 {
-					log.Infof("SendMessage2LocalUserId groupName [ %s ]", groupName)
+					//log.Infof("SendMessage2LocalUserId groupName [ %s ]", groupName)
 					send = false
 					groupList := client.GroupList
 					for _, myGroup := range groupList {
@@ -231,7 +238,7 @@ func (manager *ClientManager) SendMessage2LocalUserId(systemId, messageId, sendU
 					}
 				}
 
-				log.Infof("SendMessage2LocalUserId messageId [ %s ]", messageId)
+				//log.Infof("SendMessage2LocalUserId messageId [ %s ]", messageId)
 				if send {
 					SendMessage2LocalClient(messageId, clientId, sendUserId, code, msg, data)
 				}

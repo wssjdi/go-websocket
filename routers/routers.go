@@ -11,10 +11,14 @@ import (
 	"github.com/woodylan/go-websocket/api/send2group"
 	"github.com/woodylan/go-websocket/api/send2user"
 	"github.com/woodylan/go-websocket/servers"
+	"io"
 	"net/http"
 )
 
 func Init() {
+
+	http.HandleFunc("/health", Health)
+
 	//Rest Api
 	registerHandler := &register.Controller{}
 	sendToClientHandler := &send2client.Controller{}
@@ -36,7 +40,17 @@ func Init() {
 	http.HandleFunc("/api/send/2/user", AccessTokenMiddleware(sendToUserHandler.Run))
 	http.HandleFunc("/api/close/client", AccessTokenMiddleware(closeClientHandler.Run))
 
+	//WebSocket Api
+	websocketHandler := &servers.Controller{}
+	http.HandleFunc("/ws", websocketHandler.Run)
+
 	servers.StartWebSocket()
 
 	go servers.WriteMessage()
+}
+
+func Health(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_, _ = io.WriteString(w, "OK")
+	return
 }

@@ -5,7 +5,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/woodylan/go-websocket/pkg/setting"
 	"github.com/woodylan/go-websocket/tools/util"
-	"net/http"
 	"time"
 )
 
@@ -40,10 +39,6 @@ func init() {
 var Manager = NewClientManager() // 管理者
 
 func StartWebSocket() {
-	//WebSocket Api
-	websocketHandler := &Controller{}
-	http.HandleFunc("/ws", websocketHandler.Run)
-
 	go Manager.Start()
 }
 

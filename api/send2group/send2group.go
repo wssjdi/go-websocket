@@ -2,7 +2,6 @@ package send2group
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/woodylan/go-websocket/api"
 	"github.com/woodylan/go-websocket/define/retcode"
 	"github.com/woodylan/go-websocket/servers"
@@ -24,7 +23,7 @@ type inputData struct {
 func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	var inputData inputData
 	if err := json.NewDecoder(r.Body).Decode(&inputData); err != nil {
-		log.Infof("send2group.Run err:[%+v]", err)
+		//log.Infof("send2group.Run err:[%+v]", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

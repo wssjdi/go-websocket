@@ -1,8 +1,7 @@
-package send2group
+package send2user
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"github.com/woodylan/go-websocket/api"
 	"github.com/woodylan/go-websocket/define/retcode"
 	"github.com/woodylan/go-websocket/servers"
@@ -14,8 +13,9 @@ type Controller struct {
 
 type inputData struct {
 	SystemId   string `json:"systemId"`
-	SendUserId string `json:"sendUserId" validate:"required"`
-	GroupName  string `json:"groupName" validate:"required"`
+	SendUserId string `json:"sendUserId"  validate:"required"`
+	GroupName  string `json:"groupName"`
+	UserId     string `json:"userId" validate:"required"`
 	Code       int    `json:"code"`
 	Msg        string `json:"msg"`
 	Data       string `json:"data"`
@@ -24,7 +24,6 @@ type inputData struct {
 func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	var inputData inputData
 	if err := json.NewDecoder(r.Body).Decode(&inputData); err != nil {
-		log.Infof("send2group.Run err:[%+v]", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -39,8 +38,7 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 	if len(inputData.SystemId) > 0 {
 		systemId = inputData.SystemId
 	}
-
-	messageId := servers.SendMessage2Group(systemId, inputData.SendUserId, inputData.GroupName, inputData.Code, inputData.Msg, &inputData.Data)
+	messageId := servers.SendMessage2User(systemId, inputData.SendUserId, inputData.GroupName, inputData.UserId, inputData.Code, inputData.Msg, &inputData.Data)
 
 	api.Render(w, retcode.SUCCESS, "success", map[string]string{
 		"messageId": messageId,

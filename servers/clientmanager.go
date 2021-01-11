@@ -7,6 +7,7 @@ import (
 	"github.com/woodylan/go-websocket/define/retcode"
 	"github.com/woodylan/go-websocket/pkg/setting"
 	"github.com/woodylan/go-websocket/tools/util"
+	"strings"
 	"sync"
 	"time"
 )
@@ -79,17 +80,18 @@ func (manager *ClientManager) EventDisconnect(client *Client) {
 	manager.DelClient(client)
 
 	mJson, _ := json.Marshal(map[string]string{
-		"clientId": client.ClientId,
-		"userId":   client.UserId,
-		"extend":   client.Extend,
+		"systemId":  client.SystemId,
+		"groupName": strings.Join(client.GroupList, ","),
+		"clientId":  client.ClientId,
+		"userId":    client.UserId,
+		"extend":    client.Extend,
 	})
 	data := string(mJson)
-	sendUserId := ""
 
 	//发送下线通知
 	if client.Notify && len(client.GroupList) > 0 {
 		for _, groupName := range client.GroupList {
-			SendMessage2Group(client.SystemId, sendUserId, groupName, retcode.OffLineMsgCode, "客户端下线", &data)
+			SendMessage2Group(client.SystemId, client.ClientId, groupName, retcode.OffLineMsgCode, "客户端下线", &data)
 		}
 	}
 
@@ -133,13 +135,17 @@ func (manager *ClientManager) Count() int {
 func (manager *ClientManager) DelClient(client *Client) {
 	manager.delClientIdMap(client.ClientId)
 
+	//删除用户自己列表
+	if len(client.UserId) > 0 {
+		manager.delUserClient(client.UserId, client.ClientId)
+	}
+
 	//删除所在的分组
 	if len(client.GroupList) > 0 {
 		for _, groupName := range client.GroupList {
 			manager.delGroupClient(util.GenGroupKey(client.SystemId, groupName), client.ClientId)
 		}
 	}
-
 	// 删除系统里的客户端
 	manager.delSystemClient(client)
 }
@@ -177,8 +183,57 @@ func (manager *ClientManager) SendMessage2LocalGroup(systemId, messageId, sendUs
 					//添加到本地
 					SendMessage2LocalClient(messageId, clientId, sendUserId, code, msg, data)
 				} else {
-					//删除分组,如果客户端连接已经不存在了,则从group中删除
+					//如果客户端连接已经不存在了,则从group中删除
 					manager.delGroupClient(util.GenGroupKey(systemId, groupName), clientId)
+				}
+			}
+		}
+	}
+}
+
+// 发送到本机对应的userId
+func (manager *ClientManager) SendMessage2LocalUserId(systemId, messageId, sendUserId, groupName, userId string, code int, msg string, data *string) {
+	if len(userId) > 0 {
+		userClients := manager.GetUserClients(userId)
+		if len(userClients) > 0 {
+			log.Infof("SendMessage2LocalUserId userClients [ %d ]", len(userClients))
+			for _, clientId := range userClients {
+				log.Infof("SendMessage2LocalUserId clientId [ %s ]", clientId)
+				if len(sendUserId) > 0 && sendUserId == clientId {
+					continue //是自己,不发消息给自己
+				}
+
+				var client *Client
+				var err error
+				if client, err = manager.GetByClientId(clientId); err != nil {
+					continue //跳过,当前连接已经不存在
+				}
+
+				if client.IsDeleted {
+					continue //跳过,当前连接已经关闭
+				}
+
+				//如果查询条件中传了systemId
+				if len(systemId) > 0 && client.SystemId != systemId {
+					continue //跳过,判断下一个连接
+				}
+				log.Infof("SendMessage2LocalUserId systemId [ %s ]", systemId)
+
+				send := true
+				if len(groupName) > 0 {
+					log.Infof("SendMessage2LocalUserId groupName [ %s ]", groupName)
+					send = false
+					groupList := client.GroupList
+					for _, myGroup := range groupList {
+						if groupName == myGroup {
+							send = true
+						}
+					}
+				}
+
+				log.Infof("SendMessage2LocalUserId messageId [ %s ]", messageId)
+				if send {
+					SendMessage2LocalClient(messageId, clientId, sendUserId, code, msg, data)
 				}
 			}
 		}
@@ -217,10 +272,17 @@ func (manager *ClientManager) AddClient2LocalGroup(groupName string, client *Cli
 
 	client.GroupList = append(client.GroupList, groupName)
 
+	if len(userId) > 0 {
+		//log.Info("ClientManager AddClient2LocalGroup userId:[%s], group:[%s], clientId:[%s]", userId, groupName, client.ClientId)
+		manager.AddClient2UserClients(userId, groupName, client)
+	}
+
 	mJson, _ := json.Marshal(map[string]string{
-		"clientId": client.ClientId,
-		"userId":   client.UserId,
-		"extend":   client.Extend,
+		"systemId":  client.SystemId,
+		"groupName": groupName,
+		"clientId":  client.ClientId,
+		"userId":    client.UserId,
+		"extend":    client.Extend,
 	})
 	data := string(mJson)
 
@@ -257,10 +319,33 @@ func (manager *ClientManager) GetGroupClientList(groupKey string) []string {
 }
 
 // 添加到用户客户端连接列表
-func (manager *ClientManager) addClient2UserClients(userId string, client *Client) {
+func (manager *ClientManager) AddClient2UserClients(userId, groupName string, client *Client) {
 	manager.UserLock.Lock()
 	defer manager.UserLock.Unlock()
+
+	if len(userId) == 0 {
+		return
+	}
+
+	//判断之前是否有添加过
+	for _, clientId := range manager.UserClients[userId] {
+		if clientId == client.ClientId {
+			return
+		}
+	}
+
 	manager.UserClients[userId] = append(manager.UserClients[userId], client.ClientId)
+
+	mJson, _ := json.Marshal(map[string]string{
+		"systemId":  client.SystemId,
+		"groupName": groupName,
+		"clientId":  client.ClientId,
+		"userId":    userId,
+		"extend":    client.Extend,
+	})
+	data := string(mJson)
+	//默认通知所有当前用户登录的客户端，不区分system和group
+	SendMessage2User("", client.ClientId, "", userId, retcode.MultiSignOnCode, "在另外一个客户端登录", &data)
 }
 
 // 删除用户列表里的客户端连接
@@ -268,18 +353,62 @@ func (manager *ClientManager) delUserClient(userId string, clientId string) {
 	manager.UserLock.Lock()
 	defer manager.UserLock.Unlock()
 
-	for index, userClientId := range manager.UserClients[userId] {
-		if userClientId == clientId {
-			manager.UserClients[userId] = append(manager.UserClients[userId][:index], manager.UserClients[userId][index+1:]...)
+	userClients := manager.UserClients[userId]
+	//只有一个并且就是要删除的这个连接
+	if len(userClients) == 1 && clientId == userClients[0] {
+		delete(manager.UserClients, userId)
+	} else {
+		for index, userClientId := range userClients {
+			if userClientId == clientId {
+				manager.UserClients[userId] = append(userClients[:index], userClients[index+1:]...)
+			}
 		}
 	}
 }
 
-// 获取用户列表里的客户端连接
+// 获取本地用户列表里的客户端连接clientId
 func (manager *ClientManager) GetUserClients(userId string) []string {
 	manager.UserLock.RLock()
 	defer manager.UserLock.RUnlock()
 	return manager.UserClients[userId]
+}
+
+// 获取本地用户列表里的客户端连接,返回内容格式为:[systemId:groupName:clientId]
+func (manager *ClientManager) GetSystemGroupUserClients(systemId, groupName, userId string) []string {
+	var userClients []string
+	for _, userClientId := range manager.GetUserClients(userId) {
+		var client *Client
+		var err error
+		if client, err = manager.GetByClientId(userClientId); err != nil {
+			continue //跳过,当前连接已经不存在
+		}
+
+		if client.IsDeleted {
+			continue //跳过,当前连接已经关闭
+		}
+
+		//如果查询条件中传了systemId
+		if len(systemId) > 0 && client.SystemId != systemId {
+			continue //跳过,判断下一个连接
+		}
+
+		groupList := client.GroupList
+		if len(groupList) == 0 {
+			if len(groupName) > 0 {
+				continue //跳过,判断下一个组
+			}
+			userClients = append(userClients, util.GenUserClientKey(systemId, "", userClientId))
+		} else {
+			for _, myGroup := range client.GroupList {
+				if len(groupName) > 0 && groupName != myGroup {
+					continue //跳过,判断下一个组
+				}
+				userClients = append(userClients, util.GenUserClientKey(systemId, myGroup, userClientId))
+			}
+		}
+	}
+
+	return userClients
 }
 
 // 添加到系统客户端列表

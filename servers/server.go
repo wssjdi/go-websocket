@@ -138,6 +138,19 @@ func SendMessage2Group(systemId, sendUserId, groupName string, code int, msg str
 	return
 }
 
+//发送信息到指定用户
+func SendMessage2User(systemId, sendUserId, groupName, userId string, code int, msg string, data *string) (messageId string) {
+	messageId = util.GenUUID()
+	if util.IsCluster() {
+		//发送用户消息给指定广播
+		go SendUserBroadcast(systemId, messageId, sendUserId, groupName, userId, code, msg, data)
+	} else {
+		//如果是单机服务，则只发送到本机
+		Manager.SendMessage2LocalUserId(systemId, messageId, sendUserId, groupName, userId, code, msg, data)
+	}
+	return
+}
+
 //发送信息到指定系统
 func SendMessage2System(systemId, sendUserId string, code int, msg string, data string) {
 	messageId := util.GenUUID()
@@ -168,15 +181,15 @@ func GetOnlineList(systemId *string, groupName *string) map[string]interface{} {
 	}
 }
 
-//TODO:获取用户客户端连接列表
-func GetUserList(systemId *string, groupName *string, userId *string) map[string]interface{} {
+//获取用户客户端连接列表
+func GetUserList(systemId, groupName, userId *string) map[string]interface{} {
 	var clientList []string
 	if util.IsCluster() {
 		//发送到系统广播
-		clientList = GetOnlineListBroadcast(systemId, groupName)
+		clientList = GetUserListBroadcast(systemId, groupName, userId)
 	} else {
 		//如果是单机服务，则只发送到本机
-		retList := Manager.GetGroupClientList(util.GenGroupKey(*systemId, *groupName))
+		retList := Manager.GetSystemGroupUserClients(*systemId, *groupName, *userId)
 		clientList = append(clientList, retList...)
 	}
 
@@ -192,7 +205,7 @@ func SendMessage2LocalClient(messageId, clientId string, sendUserId string, code
 		"host":     setting.GlobalSetting.LocalHost,
 		"port":     setting.CommonSetting.HttpPort,
 		"clientId": clientId,
-	}).Info("发送到通道")
+	}).Info("SendMessage2LocalClient发送到通道")
 	ToClientChan <- clientInfo{ClientId: clientId, MessageId: messageId, SendUserId: sendUserId, Code: code, Msg: msg, Data: data}
 	return
 }
@@ -208,7 +221,7 @@ func CloseLocalClient(clientId, systemId string) {
 			"host":     setting.GlobalSetting.LocalHost,
 			"port":     setting.CommonSetting.HttpPort,
 			"clientId": clientId,
-		}).Info("主动踢掉客户端")
+		}).Info("CloseLocalClient主动踢掉客户端")
 	}
 	return
 }
@@ -226,7 +239,7 @@ func WriteMessage() {
 			"code":       clientInfo.Code,
 			"msg":        clientInfo.Msg,
 			"data":       clientInfo.Data,
-		}).Info("发送到本机")
+		}).Info("WriteMessage发送到本机")
 		if conn, err := Manager.GetByClientId(clientInfo.ClientId); err == nil && conn != nil {
 			if err := Render(conn.Socket, clientInfo.MessageId, clientInfo.SendUserId, clientInfo.Code, clientInfo.Msg, clientInfo.Data); err != nil {
 				Manager.DisConnect <- conn
@@ -235,7 +248,7 @@ func WriteMessage() {
 					"port":     setting.CommonSetting.HttpPort,
 					"clientId": clientInfo.ClientId,
 					"msg":      clientInfo.Msg,
-				}).Error("客户端异常离线：" + err.Error())
+				}).Error("WriteMessage客户端异常离线：" + err.Error())
 			}
 		}
 	}
@@ -263,9 +276,9 @@ func PingTimer() {
 				if err := conn.Socket.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(heartbeatInterval/2)); err != nil {
 					//发送心跳请求,如果心跳请求在心跳间隔时间的一半时间之内还没有成功响应，则关闭连接
 					Manager.DisConnect <- conn
-					log.Errorf("发送心跳失败,和客户端[ %s ]的连接将主动关闭; 当前总连接数：%d", clientId, Manager.Count())
+					log.Errorf("PingTimer发送心跳失败,和客户端[ %s ]的连接将主动关闭; 当前总连接数：%d", clientId, Manager.Count())
 				} //else {
-				//	log.Infof("发送心跳成功: %s 总连接数：%d", clientId, Manager.Count())
+				//	log.Infof("PingTimer发送心跳成功: %s 总连接数：%d", clientId, Manager.Count())
 				//}
 			}
 		}

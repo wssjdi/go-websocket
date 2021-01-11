@@ -49,6 +49,12 @@ message GetGroupClientsReq {
     string groupName = 2;
 }
 
+message GetUserClientsReq {
+    string systemId     = 1;
+    string groupName    = 2;
+    string userId       = 3;
+}
+
 message Send2ClientReply {
 }
 
@@ -68,6 +74,24 @@ message GetGroupClientsReply {
     repeated string list = 1;
 }
 
+message Send2UserReq {
+    string systemId = 1;
+    string messageId = 2;
+    string sendUserId = 3;
+    string groupName = 4;
+    string userId = 5;
+    int32 code = 6;
+    string message = 7;
+    string data = 8;
+}
+
+message Send2UserReply {
+}
+
+message GetUserClientsReply {
+    repeated string list = 1;
+}
+
 service CommonService {
     rpc Send2Client (Send2ClientReq) returns (Send2ClientReply) {
     }
@@ -80,5 +104,9 @@ service CommonService {
     rpc Send2System (Send2SystemReq) returns (Send2SystemReply) {
     }
     rpc GetGroupClients (GetGroupClientsReq) returns (GetGroupClientsReply) {
+    }
+    rpc Send2User (Send2UserReq) returns (Send2UserReply) {
+    }
+    rpc GetUserClients (GetUserClientsReq) returns (GetUserClientsReply) {
     }
 }

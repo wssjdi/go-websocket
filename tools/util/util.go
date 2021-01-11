@@ -2,6 +2,7 @@ package util
 
 import (
 	"errors"
+	"fmt"
 	uuid "github.com/satori/go.uuid"
 	"github.com/woodylan/go-websocket/pkg/setting"
 	"github.com/woodylan/go-websocket/tools/crypto"
@@ -72,5 +73,9 @@ func GetAddrInfoAndIsLocal(clientId string) (addr string, host string, port stri
 }
 
 func GenGroupKey(systemId, groupName string) string {
-	return systemId + ":" + groupName
+	return fmt.Sprintf("%s:%s", systemId, groupName)
+}
+
+func GenUserClientKey(systemId, groupName, clientId string) string {
+	return fmt.Sprintf("%s:%s", GenGroupKey(systemId, groupName), clientId)
 }

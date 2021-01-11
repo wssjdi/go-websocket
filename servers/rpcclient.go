@@ -106,6 +106,34 @@ func SendGroupBroadcast(systemId string, messageId, sendUserId, groupName string
 	}
 }
 
+//发送用户消息
+func SendUserBroadcast(systemId string, messageId, sendUserId, groupName, userId string, code int, message string, data *string) {
+	setting.GlobalSetting.ServerListLock.Lock()
+	defer setting.GlobalSetting.ServerListLock.Unlock()
+	index := 0
+	for key, addr := range setting.GlobalSetting.ServerList {
+		log.Infof("GlobalSetting.ServerList index:[ %d ], Key:[ %s ], Value:[ %s ]", index, key, addr)
+		index = index + 1
+		conn := grpcConn(addr)
+		defer conn.Close()
+
+		c := pb.NewCommonServiceClient(conn)
+		_, err := c.Send2User(context.Background(), &pb.Send2UserReq{
+			SystemId:   systemId,
+			MessageId:  messageId,
+			SendUserId: sendUserId,
+			GroupName:  groupName,
+			UserId:     userId,
+			Code:       int32(code),
+			Message:    message,
+			Data:       *data,
+		})
+		if err != nil {
+			log.Errorf("failed to call: %v", err)
+		}
+	}
+}
+
 //发送系统信息
 func SendSystemBroadcast(systemId string, messageId, sendUserId string, code int, message string, data *string) {
 	setting.GlobalSetting.ServerListLock.Lock()
@@ -169,6 +197,51 @@ func GetOnlineListBroadcast(systemId *string, groupName *string) (clientIdList [
 		}
 	}
 	close(onlineListChan)
+
+	return
+}
+
+func GetUserListBroadcast(systemId, groupName, userId *string) (userList []string) {
+	setting.GlobalSetting.ServerListLock.Lock()
+	defer setting.GlobalSetting.ServerListLock.Unlock()
+
+	serverCount := len(setting.GlobalSetting.ServerList)
+
+	userListChan := make(chan []string, serverCount)
+	var wg sync.WaitGroup
+
+	wg.Add(serverCount)
+	for _, addr := range setting.GlobalSetting.ServerList {
+		go func(addr string) {
+			conn := grpcConn(addr)
+			defer conn.Close()
+			c := pb.NewCommonServiceClient(conn)
+			response, err := c.GetUserClients(context.Background(), &pb.GetUserClientsReq{
+				SystemId:  *systemId,
+				GroupName: *groupName,
+				UserId:    *userId,
+			})
+			if err != nil {
+				log.Errorf("failed to call: %v", err)
+			} else {
+				userListChan <- response.List
+			}
+			wg.Done()
+
+		}(addr)
+	}
+
+	wg.Wait()
+
+	for i := 1; i <= serverCount; i++ {
+		list, ok := <-userListChan
+		if ok {
+			userList = append(userList, list...)
+		} else {
+			return
+		}
+	}
+	close(userListChan)
 
 	return
 }

@@ -64,6 +64,13 @@ func (c *Controller) Run(w http.ResponseWriter, r *http.Request) {
 		Manager.AddClient2LocalGroup(groupName, clientSocket, userId, extend)
 	}
 
+	//如果有userId参数
+	userId := r.FormValue("userId")
+	if len(userId) > 0 {
+		//log.Info("connect Run AddClient2UserClients userId:[%s], group:[%s], clientId:[%s]", userId, groupName, clientId)
+		Manager.AddClient2UserClients(userId, groupName, clientSocket)
+	}
+
 	//读取客户端消息
 	clientSocket.Read()
 

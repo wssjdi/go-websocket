@@ -146,7 +146,20 @@ func handlerClientMsg(c *Client, msg *clientMsg) {
 		}
 
 	case Send2User:
-		// TODO: 向拥有相同业务端UserId的客户端发送消息(S2U)
+		// 向拥有相同业务端UserId的客户端发送消息(S2U)
+		if len(msg.UserId) > 0 {
+			//组发送的同时,如果也传了ClientIds,则使用多发，只发送给指定的客户端
+			if len(msg.ClientIds) > 0 {
+				for _, clientId := range msg.ClientIds {
+					//单个客户端发送信息
+					SendMessage2Client(clientId, c.ClientId, retcode.SUCCESS, "success", &msg.Data)
+				}
+			} else {
+				//发所有当前用户的客户端连接
+				SendMessage2User(systemId, c.ClientId, msg.GroupName, msg.UserId, retcode.SUCCESS, "success", &msg.Data)
+			}
+		}
+
 	case Close:
 		// 同时向群组内所有有效的客户端发送消息(CLS)
 		CloseClient(c.ClientId, systemId)
